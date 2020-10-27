@@ -15,16 +15,16 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from qa.views import test
+from qa import views
 
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^$', test, name='home'),
+    url(r'^$', views.main_page_view, name='home'),
     url(r'^login/.*', test, name='login'),
     url(r'^signup/.*', test, name='signup'),
-    url(r'^question/(?P<id>\d+)/$', test, name='question'),
+    url(r'^question/(?P<id>\d+)/$', views.quesion_view, name='question'),
     url(r'^ask/.*', test, name='ask'),
-    url(r'^popular/.*', test, name='popular'),
+    url(r'^popular/.*', views.popular_view, name='popular'),
     url(r'^new/.*', test, name='new'),
 ]
