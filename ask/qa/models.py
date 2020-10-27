@@ -34,9 +34,5 @@ class Answer(models.Model):
     objects = AnswerManager()
     text = models.TextField()
     added_at = models.DateTimeField( auto_now_add=True)
-<<<<<<< HEAD
     question = models.ForeignKey(Question, null=True, on_delete=models.CASCADE)
-=======
-    question = models.ForeignKey(Question,null=True, on_delete=models.CASCADE)
->>>>>>> 621749af801c23b166afcc1db3b6d53de7b66563
     author = models.ForeignKey(User, on_delete=models.CASCADE)
