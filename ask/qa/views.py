@@ -1,10 +1,12 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.core.paginator import Paginator
-
+from django.urls import reverse
 
 from .models import Question
 from .models import Answer
+from .forms import AskForm
+from .forms import AnswerForm
 
 # Create your views here.
 
@@ -44,8 +46,31 @@ def popular_view(request, *args, **kwargs):
 def question_view(request, pk=0):
 	question = get_object_or_404(Question, id=pk)
 	answers = Answer.objects.answers_for_question(pk)
+	if request.method == "POST":
+		form = AnswerForm(request.POST)
+		if form.is_valid():
+			form.save()
+			return HttpResponseRedirect(reverse(question_view, kwargs={'pk': question.id}))
+	else:
+		form = AnswerForm(initial={"question": question.pk})
+
 	return render(request, 'pages/question.html', {
 		    'title': question.title,
 		    'question': question.text,
-		    'answers': answers
+		    'answers': answers,
+			'form': form
 	})
+
+
+def question_add(request):
+	if request.method == "POST":
+		form = AskForm(request.POST)
+		if form.is_valid():
+			question = form.save()
+			return HttpResponseRedirect(reverse(question_view, kwargs={'pk': question.id}))
+	else:
+		form = AskForm()
+	return render(request, 'pages/ask.html', {
+	'form': form
+	})
+
