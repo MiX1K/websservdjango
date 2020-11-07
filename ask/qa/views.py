@@ -1,12 +1,22 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.core.paginator import Paginator
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
 from django.urls import reverse
+from datetime import datetime, timedelta
+from django.contrib.auth.decorators import login_required
+
+import uuid
+
 
 from .models import Question
 from .models import Answer
 from .forms import AskForm
 from .forms import AnswerForm
+from .forms import SignupForm
+from .forms import LoginForm
+
 
 # Create your views here.
 
@@ -42,14 +52,16 @@ def popular_view(request, *args, **kwargs):
 		'paginator': paginator, 'page': page
 	})
 
-
+@login_required
 def question_view(request, pk=0):
 	question = get_object_or_404(Question, id=pk)
 	answers = Answer.objects.answers_for_question(pk)
 	if request.method == "POST":
 		form = AnswerForm(request.POST)
 		if form.is_valid():
-			form.save()
+			answer = form.save()
+			answer.author = request.user
+			answer.save()
 			return HttpResponseRedirect(reverse(question_view, kwargs={'pk': question.id}))
 	else:
 		form = AnswerForm(initial={"question": question.pk})
@@ -61,16 +73,61 @@ def question_view(request, pk=0):
 			'form': form
 	})
 
-
+@login_required
 def question_add(request):
 	if request.method == "POST":
 		form = AskForm(request.POST)
 		if form.is_valid():
 			question = form.save()
+			question.author = request.user
+			question.save()
 			return HttpResponseRedirect(reverse(question_view, kwargs={'pk': question.id}))
 	else:
 		form = AskForm()
 	return render(request, 'pages/ask.html', {
 	'form': form
 	})
+
+
+def signup_view(request):
+	if request.method == "POST":
+		form = SignupForm(request.POST)
+		if form.is_valid():
+			user = form.save()
+			User.objects.create_user(user.username, user.email, user.password)
+			user = authenticate(username=user.username, password=user.password)
+			login(request, user)
+			return HttpResponseRedirect('/')
+	else:
+		form = SignupForm()
+	return render(request, 'pages/ask.html', {
+	'form': form
+	})
+
+def login_view(request):
+	if request.method == "POST":
+		form = LoginForm(request.POST)
+		if form.is_valid():
+			user = form.save()
+			user = authenticate(username=user.username, password=user.password)
+			if user is not None:
+				response = HttpResponseRedirect('/')
+				response.set_cookie('sessid', uuid.uuid4(),
+									domain='.site.com', httponly=True,
+									expires = datetime.now()+timedelta(days=5)
+)
+				login(request, user)
+				return HttpResponseRedirect('/')
+			else:
+				form = LoginForm
+				return render(request, 'pages/ask.html', {
+					'form': form
+				})
+
+	else:
+		form = LoginForm()
+	return render(request, 'pages/ask.html', {
+	'form': form
+	})
+
 
